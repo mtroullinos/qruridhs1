@@ -1076,8 +1076,13 @@ async function fetchPrices(name) {
     }
     if (!dates.length) throw new Error("Empty after filter");
 
-    const yfCurrency = (result.meta?.currency || "").toUpperCase() || null;
-    priceCache[name] = { dates, closes, source: "live", yfCurrency };
+    // Yahoo returns LSE prices in GBp (pence) — convert to GBP by dividing by 100
+    const rawCurrency = result.meta?.currency || "";
+    const isGBp = rawCurrency === "GBp";
+    const yfCurrency = isGBp ? "GBP" : (rawCurrency.toUpperCase() || null);
+    const finalCloses = isGBp ? closes.map(c => c / 100) : closes;
+
+    priceCache[name] = { dates, closes: finalCloses, source: "live", yfCurrency };
     return priceCache[name];
 
   } catch(err) {
